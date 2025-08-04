@@ -5,6 +5,9 @@
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
+import           Data.Maybe
+import           Control.Applicative
+import           Data.List
 import           Control.Lens (set, ix, imap)
 import           Prelude
 -----------------------------------------------------------------------------
@@ -50,6 +53,20 @@ updateModel = \case
   Place p (x, y) -> do
     modify $ \m -> m { _board = set (ix y . ix x) (Just p) (m ^. board) }
     piece %= \xo -> if xo == X then O else X
+    currentBoard <- gets _board
+    case checkWinner currentBoard of
+      Just X -> do
+        io_ (alert "X wins!")
+        board .= emptyBoard
+      Just O -> do
+        io_ (alert "O wins!")
+        board .= emptyBoard
+      Nothing -> do
+        if gameOver currentBoard
+          then do
+            io_ (alert "Game over!")
+            board .= emptyBoard
+          else pure ()
 -----------------------------------------------------------------------------
 viewModel :: Model -> View Model Action
 viewModel Model {..} =
@@ -94,4 +111,24 @@ viewModel Model {..} =
                 [ text (ms (show piece'))
                 ]
           ]
+-----------------------------------------------------------------------------
+checkWinner :: Board -> Maybe Piece
+checkWinner board_
+  | any (all (==Just X)) board_ = Just X
+  | any (all (==Just O)) board_ = Just O
+  | any (all (==Just X)) (transpose board_) = Just X
+  | any (all (==Just O)) (transpose board_) = Just O
+  | otherwise = checkDiagonals board_
+-----------------------------------------------------------------------------
+checkDiagonals :: Board -> Maybe Piece
+checkDiagonals [x,y,z] = check X <|> check O
+  where
+    check p
+      | all (==Just p) [ x !! 0, y !! 1, z !! 2 ] = Just p
+      | all (==Just p) [ x !! 2, y !! 1, z !! 0 ] = Just p
+      | otherwise = Nothing
+checkDiagonals _ = Nothing
+-----------------------------------------------------------------------------
+gameOver :: Board -> Bool
+gameOver = all isJust . concat
 -----------------------------------------------------------------------------
