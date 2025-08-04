@@ -1,3 +1,4 @@
-.stack-work/
-tic-tac-miso.cabal
 *~
+dist*
+result
+public
