@@ -18,6 +18,10 @@ data Piece
   | O
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+-----------------------------------------------------------------------------
 -- | Nothing indicates empty spot
 type Board = [[Maybe Piece]]        -- 3 x 3 list
 -----------------------------------------------------------------------------
