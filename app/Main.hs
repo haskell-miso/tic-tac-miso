@@ -5,6 +5,8 @@
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
+module Main (main) where
+-----------------------------------------------------------------------------
 import           Control.Monad
 import           Data.Maybe
 import           Control.Applicative
@@ -18,23 +20,13 @@ import qualified Miso.Style as CSS
 import           Miso.Lens hiding (set)
 import           Miso.Lens.TH
 -----------------------------------------------------------------------------
+-- | Nothing indicates empty spot
+type Board = [[Maybe Piece]]        -- 3 x 3 list
+-----------------------------------------------------------------------------
 data Piece
   = X
   | O
   deriving (Show, Eq)
------------------------------------------------------------------------------
-#ifdef WASM
-foreign export javascript "hs_start" main :: IO ()
-#endif
------------------------------------------------------------------------------
--- | Nothing indicates empty spot
-type Board = [[Maybe Piece]]        -- 3 x 3 list
------------------------------------------------------------------------------
-emptyBoard :: Board
-emptyBoard = replicate 3 (replicate 3 Nothing)
------------------------------------------------------------------------------
-emptyModel :: Model
-emptyModel = Model emptyBoard X
 -----------------------------------------------------------------------------
 data Model
   = Model
@@ -43,6 +35,16 @@ data Model
   } deriving Eq
 -----------------------------------------------------------------------------
 $(makeLenses ''Model)
+-----------------------------------------------------------------------------
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+-----------------------------------------------------------------------------
+emptyBoard :: Board
+emptyBoard = replicate 3 (replicate 3 Nothing)
+-----------------------------------------------------------------------------
+emptyModel :: Model
+emptyModel = Model emptyBoard X
 -----------------------------------------------------------------------------
 data Action = Place Piece (Int, Int)
 -----------------------------------------------------------------------------
