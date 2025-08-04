@@ -1,8 +1,9 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 import           Control.Lens (set, ix, imap)
 import           Prelude
