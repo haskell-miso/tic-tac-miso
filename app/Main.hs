@@ -5,6 +5,7 @@
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
+import           Control.Monad
 import           Data.Maybe
 import           Control.Applicative
 import           Data.List
@@ -62,11 +63,9 @@ updateModel = \case
         io_ (alert "O wins!")
         board .= emptyBoard
       Nothing -> do
-        if gameOver currentBoard
-          then do
-            io_ (alert "Game over!")
-            board .= emptyBoard
-          else pure ()
+        when (gameOver currentBoard) $ do
+          io_ (alert "Game over!")
+          board .= emptyBoard
 -----------------------------------------------------------------------------
 viewModel :: Model -> View Model Action
 viewModel Model {..} =
