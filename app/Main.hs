@@ -18,6 +18,7 @@ import           Prelude
 import           Miso hiding (set)
 import           Miso.String (ToMisoString(..))
 import qualified Miso.String as MS
+import qualified Miso.Style as CSS
 import           Miso.Lens hiding (set)
 import           Miso.Lens.TH
 -----------------------------------------------------------------------------
@@ -97,6 +98,7 @@ githubStar = iframe_
     [ title_ "GitHub"
     , height_ "30"
     , width_ "170"
+    , CSS.style_ [ CSS.marginLeft (CSS.px 60) ]
     , textProp "scrolling" "0"
     , textProp "frameborder" "0"
     , src_
@@ -105,12 +107,11 @@ githubStar = iframe_
     []
 -----------------------------------------------------------------------------
 viewModel :: Model -> View Model Action
-viewModel m@Model {..} =
-  div_
+viewModel m@Model {..} = div_ []
+  [ div_
     [ class_ "game-container"
     ]
-    [ githubStar
-    , h1_
+    [ h1_
       []
       [ "Tic Tac Miso 🍜"
       ]
@@ -151,7 +152,9 @@ viewModel m@Model {..} =
       ]
       [ "Reset Game"
       ]
+    , githubStar
     ]
+  ]
 -----------------------------------------------------------------------------
 possibilities :: [[Int]]
 possibilities = rows ++ cols ++ diag
