@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE MultiWayIf        #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -7,31 +8,41 @@
 -----------------------------------------------------------------------------
 module Main (main) where
 -----------------------------------------------------------------------------
+import           Data.Bool
+import qualified Data.IntMap as IM
+import           Data.IntMap (IntMap)
 import           Control.Monad
 import           Data.Maybe
-import           Control.Applicative
-import           Data.List
-import           Control.Lens (set, ix, imap)
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso hiding (set)
-import           Miso.String (ms)
-import qualified Miso.Style as CSS
+import           Miso.String (ToMisoString(..))
+import qualified Miso.String as MS
 import           Miso.Lens hiding (set)
 import           Miso.Lens.TH
 -----------------------------------------------------------------------------
 -- | Nothing indicates empty spot
-type Board = [[Maybe Piece]]        -- 3 x 3 list
+type Board = IntMap Piece
 -----------------------------------------------------------------------------
 data Piece
   = X
   | O
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum)
+-----------------------------------------------------------------------------
+instance ToMisoString Piece where
+  toMisoString X = "X"
+  toMisoString O = "O"
+-----------------------------------------------------------------------------
+next :: Piece -> Piece
+next X = O
+next O = X
 -----------------------------------------------------------------------------
 data Model
   = Model
   { _board :: Board
   , _piece :: Piece
+  , _winners :: [Int]
+  , _gameover :: Bool
   } deriving Eq
 -----------------------------------------------------------------------------
 $(makeLenses ''Model)
@@ -41,95 +52,116 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 -----------------------------------------------------------------------------
 emptyBoard :: Board
-emptyBoard = replicate 3 (replicate 3 Nothing)
+emptyBoard = IM.empty
 -----------------------------------------------------------------------------
 emptyModel :: Model
-emptyModel = Model emptyBoard X
+emptyModel = Model emptyBoard X [] False
 -----------------------------------------------------------------------------
-data Action = Place Piece (Int, Int)
+data Action = Place Int | Reset
 -----------------------------------------------------------------------------
 main :: IO ()
 main = run $ startApp $ (component emptyModel updateModel viewModel)
+#ifndef WASM
+  { styles = [ Href "assets/style.css" ]
+  }
+#endif
 -----------------------------------------------------------------------------
 updateModel :: Action -> Transition Model Action
 updateModel = \case
-  Place p (x, y) -> do
-    modify $ \m -> m { _board = set (ix y . ix x) (Just p) (m ^. board) }
-    piece %= \xo -> if xo == X then O else X
-    currentBoard <- gets _board
-    case checkWinner currentBoard of
-      Just X -> do
-        io_ (alert "X wins!")
-        board .= emptyBoard
-      Just O -> do
-        io_ (alert "O wins!")
-        board .= emptyBoard
+  Reset ->
+    this .= emptyModel
+  Place key ->
+    IM.lookup key <$> gets _board >>= \case
+      Just _ ->
+        pure ()
       Nothing -> do
-        when (gameOver currentBoard) $ do
-          io_ (alert "Game over!")
-          board .= emptyBoard
+        currentPiece <- gets _piece
+        board %= IM.insert key currentPiece
+        currentBoard <- gets _board
+        piece %= next
+        case checkWinners currentPiece currentBoard of
+          Just (X, wins) -> do
+            piece .= X 
+            winners .= wins
+            gameover .= True
+          Just (O, wins) -> do
+            piece .= O
+            winners .= wins
+            gameover .= True
+          Nothing -> do
+            itsOver <- gameOver <$> gets _board
+            when itsOver (gameover .= True)
 -----------------------------------------------------------------------------
 viewModel :: Model -> View Model Action
-viewModel Model {..} =
+viewModel m@Model {..} =
   div_
-  []
-  [ h1_ [] [ "tic-tac-miso" ]
-  , div_ [] (imap makeRow _board)
-  ]
-  where
-    makeRow :: Int -> [Maybe Piece] -> View Model Action
-    makeRow y row = div_ [] (imap makePiece row)
-      where
-        makePiece :: Int -> Maybe Piece -> View Model Action
-        makePiece x p =
-          div_
-          [ className "piece"
-          , CSS.style_
-            [ CSS.display "inline-block"
-            , CSS.width "50px"
-            , CSS.margin "auto"
-            , CSS.textAlign "center"
+    [ class_ "game-container"
+    ]
+    [ h1_
+      []
+      [ "Tic Tac Miso 🍜"
+      ]
+    , div_
+      [ id_ "status"
+      , class_ "status"
+      ]
+      [ if | m ^. gameover && null (m ^. winners) -> text "Stalemate !"
+           | not $ null (m ^. winners) -> text $ ms (m ^. piece) <> " wins !"
+           | otherwise -> text ("Player " <> ms (show _piece) <> "'s turn")
+      ]
+    , div_
+      [ id_ "board"
+      , class_ "board"
+      ]
+      [ optionalAttrs
+          button_
+            [ classes_
+              [ "cell"
+              , maybe MS.empty (MS.toLower . ms) maybePiece
+              , bool mempty "winning-cell" $ ix `elem` (m ^. winners)
+              ]
+            ] (not (m ^. gameover))
+            [ onClick (Place ix)
             ]
+        [ text (ms piece_)
+        | Just piece_ <- pure maybePiece
+        ]
+      | (ix, maybePiece) <-
+          [ (ix, _board IM.!? ix)
+          | ix <- [0..8]
           ]
-          [ case p of
-              Nothing ->
-                button_
-                [ onClick $ Place _piece (x,y)
-                , CSS.style_
-                  [ CSS.height (CSS.px 25)
-                  , CSS.width (CSS.px 25)
-                  ]
-                ]
-                [ text "  "
-                ]
-              Just piece' ->
-                span_
-                [ CSS.style_
-                  [ CSS.height (CSS.px 25)
-                  , CSS.width (CSS.px 25)
-                  ]
-                ]
-                [ text (ms (show piece'))
-                ]
-          ]
+      ]
+    , button_
+      [ id_ "resetBtn"
+      , class_ "reset-btn"
+      , onClick Reset
+      ]
+      [ "Reset Game"
+      ]
+    ]
 -----------------------------------------------------------------------------
-checkWinner :: Board -> Maybe Piece
-checkWinner board_
-  | any (all (==Just X)) board_ = Just X
-  | any (all (==Just O)) board_ = Just O
-  | any (all (==Just X)) (transpose board_) = Just X
-  | any (all (==Just O)) (transpose board_) = Just O
-  | otherwise = checkDiagonals board_
------------------------------------------------------------------------------
-checkDiagonals :: Board -> Maybe Piece
-checkDiagonals [x,y,z] = check X <|> check O
+possibilities :: [[Int]]
+possibilities = rows ++ cols ++ diag
   where
-    check p
-      | all (==Just p) [ x !! 0, y !! 1, z !! 2 ] = Just p
-      | all (==Just p) [ x !! 2, y !! 1, z !! 0 ] = Just p
-      | otherwise = Nothing
-checkDiagonals _ = Nothing
+    rows = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+    cols = [[0, 3, 6], [1, 4, 7], [2, 5, 8]]
+    diag = [[0, 4, 8], [2, 4, 6]]
+-----------------------------------------------------------------------------
+checkWinners :: Piece -> Board -> Maybe (Piece, [Int])
+checkWinners p b = join $ listToMaybe
+  [ x | x@Just{} <- checkWinner <$> possibilities ]
+    where
+      checkWinner [x,y,z]
+        | winner = Just (p, [x,y,z])
+        | otherwise = Nothing
+        where
+          winner = and
+            [ b IM.!? x == Just p
+            , b IM.!? y == Just p
+            , b IM.!? z == Just p
+            ]
+      checkWinner _ = Nothing
 -----------------------------------------------------------------------------
 gameOver :: Board -> Bool
-gameOver = all isJust . concat
+gameOver = (==9) . IM.size 
 -----------------------------------------------------------------------------
