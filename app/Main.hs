@@ -91,13 +91,26 @@ updateModel = \case
           Nothing -> do
             itsOver <- gameOver <$> gets _board
             when itsOver (gameover .= True)
+-----------------------------------------------------------------------------            
+githubStar :: View model action
+githubStar = iframe_
+    [ title_ "GitHub"
+    , height_ "30"
+    , width_ "170"
+    , textProp "scrolling" "0"
+    , textProp "frameborder" "0"
+    , src_
+      "https://ghbtns.com/github-btn.html?user=haskell-miso&repo=miso-reactive&type=star&count=true&size=large"
+    ]
+    []
 -----------------------------------------------------------------------------
 viewModel :: Model -> View Model Action
 viewModel m@Model {..} =
   div_
     [ class_ "game-container"
     ]
-    [ h1_
+    [ githubStar
+    , h1_
       []
       [ "Tic Tac Miso 🍜"
       ]
