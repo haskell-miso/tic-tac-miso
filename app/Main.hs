@@ -100,7 +100,7 @@ githubStar = iframe_
     , textProp "scrolling" "0"
     , textProp "frameborder" "0"
     , src_
-      "https://ghbtns.com/github-btn.html?user=haskell-miso&repo=miso-reactive&type=star&count=true&size=large"
+      "https://ghbtns.com/github-btn.html?user=haskell-miso&repo=tic-tac-miso&type=star&count=true&size=large"
     ]
     []
 -----------------------------------------------------------------------------
