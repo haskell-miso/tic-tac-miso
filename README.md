@@ -1,9 +1,14 @@
 :ramen: ❌ ⭕ tic-tac-miso
 =============================
 
-A simple tic-tac-toe implemention.
-
 Play it live [here](https://tic-tac-miso.haskell-miso.org).
+
+<center>
+<a href="https://tic-tac-miso.haskell-miso.org">
+  <img width="391" height="377" alt="image" src="https://github.com/user-attachments/assets/745202d5-2555-4b90-9318-d16dfb6e478a" />
+</a>
+</center>
+
 
 > [!TIP]
 > This requires installing [nix](https://nixos.org) with [Nix Flakes](https://wiki.nixos.org/wiki/Flakes) enabled.
