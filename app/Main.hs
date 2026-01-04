@@ -16,9 +16,11 @@ import           Data.Maybe
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso hiding (set)
+import           Miso.Html hiding (title_)
+import           Miso.Html.Property
 import           Miso.String (ToMisoString(..))
 import qualified Miso.String as MS
-import qualified Miso.Style as CSS
+import qualified Miso.CSS as CSS
 import           Miso.Lens hiding (set)
 import           Miso.Lens.TH
 -----------------------------------------------------------------------------
