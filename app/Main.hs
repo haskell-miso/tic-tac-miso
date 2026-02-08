@@ -63,7 +63,7 @@ emptyModel = Model emptyBoard X [] False
 data Action = Place Int | Reset
 -----------------------------------------------------------------------------
 main :: IO ()
-main = startApp $ (component emptyModel updateModel viewModel)
+main = startApp defaultEvents (component emptyModel updateModel viewModel)
 #ifndef WASM
   { styles = [ Href "assets/style.css" ]
   }
