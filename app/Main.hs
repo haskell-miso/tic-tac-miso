@@ -69,7 +69,7 @@ main = run $ startApp $ (component emptyModel updateModel viewModel)
   }
 #endif
 -----------------------------------------------------------------------------
-updateModel :: Action -> Transition Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel = \case
   Reset ->
     this .= emptyModel
