@@ -109,7 +109,7 @@ githubStar = iframe_
     []
 -----------------------------------------------------------------------------
 viewModel :: Model -> View Model Action
-viewModel m@Model {..} = div_ []
+viewModel m@Model {..} = vfrag
   [ div_
     [ class_ "game-container"
     ]
